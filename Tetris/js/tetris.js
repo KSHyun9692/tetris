@@ -1,3 +1,5 @@
+import BLOCKS from "./blocks.js"
+
 //DOM
 const playground = document.querySelector(".playground > ul");
 
@@ -9,15 +11,6 @@ let score = 0;
 let duration = 500;
 let downInterval;
 let tempMovingItem;
-
-const BLOCKS = {
-    tree:[
-        [[2,1],[0,1],[1,0],[1,1]],
-        [],
-        [],
-        [],
-    ]
-}
 
 const movingItem = {
     type:"tree",
@@ -31,7 +24,7 @@ init();
 //functions
 function init(){
     tempMovingItem = {...movingItem};
-    for(let i=0; i<GAME_ROWS; i++){
+    for(let i=0; i < GAME_ROWS; i++){
         prependNewLine();
     }
     renderBlocks();
@@ -47,13 +40,13 @@ function prependNewLine(){
     li.prepend(ul);
     playground.prepend(li);
 }
-function renderBlocks(){
+function renderBlocks(moveType=""){
     const {type, direction, top, left} = tempMovingItem;
     const movingBlocks = document.querySelectorAll(".moving");
     movingBlocks.forEach(moving=>{
         moving.classList.remove(type, "moving");
     });
-    BLOCKS[type][direction].forEach(block=>{
+    BLOCKS[type][direction].some(block=>{
         const x = block[0] + left;
         const y = block[1] + top;
         //console.log({playground});
@@ -62,12 +55,16 @@ function renderBlocks(){
         //console.log(target);
         if(isAvailable){
             target.classList.add(type, "moving");
-        }else{
+        } else {
             tempMovingItem = {...movingItem};
-            // setTimeout(()=>{
-            //     renderBlocks();
-            // },0);
-            renderBlocks();
+            setTimeout(()=>{
+                renderBlocks();
+                if(moveType === "top"){
+                    seizBlock();
+                }
+            },0);
+            //renderBlocks();
+            return true;
         }
     });
     movingItem.left = left;
@@ -76,8 +73,28 @@ function renderBlocks(){
 
     //console.log(type, direction, top, left);
 }
+function seizBlock(){
+    const movingBlocks = document.querySelectorAll(".moving");
+    movingBlocks.forEach(moving=>{
+        moving.classList.remove("moving");
+        moving.classList.add("seized");
+    });
+    generateNewBlock();
+}
+function generateNewBlock(){
+    const blockArray = Object.entries(BLOCKS);
+    const randomIndex = Math.floor(Math.random() * blockArray.length);
+    movingItem.type = blockArray[randomIndex][0];
+    movingItem.top = 0;
+    movingItem.left = 3;
+    movingItem.direction = 0;
+    tempMovingItem = {...movingItem};
+    renderBlocks();
+}
+
+
 function checkEmpty(target){
-    if(!target){
+    if(!target || target.classList.contains("seized")){
         return false;
     }
     return true;
@@ -85,7 +102,17 @@ function checkEmpty(target){
 
 function moveBlock(moveType, amount){
     tempMovingItem[moveType] += amount;
+    renderBlocks(moveType);
+}
+function changeDirection(){
+    const direction =  tempMovingItem.direction;
+    direction === 3 ? tempMovingItem.direction = 0 : tempMovingItem.direction += 1;
     renderBlocks();
+
+    // tempMovingItem.direction += 1;
+    // if(tempMovingItem.direction ===4){
+    //     tempMovingItem.direction = 0;
+    // }
 }
 
 //event handling
@@ -99,6 +126,9 @@ document.addEventListener("keydown", e => {
             break;
         case 40:
             moveBlock("top", 1);
+            break;
+        case 38:
+            changeDirection();
             break;
         default:
             break;
